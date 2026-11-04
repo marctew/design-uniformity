@@ -314,6 +314,24 @@ Every app's Settings page has a **Design system** card (`templates/partials/desi
 
 The app never updates itself: the buttons only leave a flag file for the host's updater (section 18). Apps with their own markup can use `design-card.js` with their own classes through `data-badge`.
 
+### 7.15 Sidebar footer, version and About
+
+Every app's sidebar ends the same way, as Binge Stats does, so these sit in exactly the same place everywhere (`templates/partials/sidebar_foot.html`):
+1. **Sign out**, a full-width nav link with the `logout` glyph. Always "Sign out", never "Log out". Leave it out only when the app has no login.
+2. **The theme switch** (13).
+3. **The version line**, faint 12px text linking to the About page: `v1.0.0 · b81afd5 · About`. That's the app's own version, then the short SHA of the running checkout.
+
+The footer is 24px below the nav, with a hairline and 16px above Sign out. **Nothing else goes in it.** App-specific controls (The Back Room's index status, Rescan and player choice) sit above it in the sidebar, so the three never move.
+
+**Version:** each app sets `__version__` in its package (`MAJOR.MINOR.PATCH`) and passes it to `du_flask.init_design(..., version=__version__)`. That also gives templates `app_version`, `app_sha()` (read from `.git` on each render, so an update shows without a restart) and `runtime_facts()`.
+
+**About** (`/about`, behind the login, `templates/partials/about.html`), three cards side by side on desktop:
+- **The app:** icon, name with the gradient half, `v1.0.0 · b81afd5`, then Python, SQLite and anything the app depends on (Plex server, worker state, MQTT broker).
+- **Your data:** counts and sizes, then a hint line saying where it all lives.
+- **Built with:** the stack and credits, with links, plus any small print ("Not affiliated with Plex Inc.").
+
+A **GitHub** button sits in the page header when the repo is public or the user can reach it.
+
 ## 8. States and live data
 
 ### 8.1 Interaction states
@@ -592,6 +610,7 @@ health = "http://127.0.0.1:8765/healthz" # anything below 500 counts as up
 | 2026-11-04 | Added the updater (`tools/du_sync.py`), the Design system card (7.14) and releases from GitHub (18.1). Added `.row`, `.row-between` and the plain-CSS helpers to the Tailwind entry. | – |
 | 2026-11-04 | Added `confirm_button` and the `.confirm` popover (7.10), which replace `window.confirm()`. `md` and `xl` are allowed for grid and table columns only (6). Listed the allowed hard-coded colours (13). | Binge Stats |
 | 2026-11-04 | Added `js/confirm.js` (7.10), the inline confirm for plain forms, and the `image` glyph. | Vital Signs |
+| 2026-11-04 | The sidebar footer and About page (7.15), from Binge Stats: `partials/sidebar_foot.html`, `partials/about.html`, and `du_flask` now provides `app_version`, `app_sha()` and `runtime_facts()`. | The Back Room, Vital Signs, PodBridge |
 | 2026-11-04 | `duConfirm(button, question, yes)` in `js/confirm.js`: the inline confirm for click handlers, in place of `window.confirm()`. The `star`, `tag` and `headset` glyphs, and The Back Room's icon. | The Back Room |
 | 2026-11-04 | The Design system card sends a CSRF token (`data-csrf`, as `X-CSRF-Token`) for apps that check one on every POST. White text on a dark scrim over artwork is an allowed hard-coded colour (13). | PodBridge |
 | 2026-11-04 | Added `APP-STANDARD.md`: how every app is built, run and deployed, with The Back Room as the reference app. The 18.1 example now uses `/healthz` and `scripts/update.sh`. | The Back Room |

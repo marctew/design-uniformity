@@ -94,6 +94,7 @@ New apps use one name for the folder, service and env file. Older apps keep the 
 - **Login:** a session cookie named after the app, `SameSite=Lax` and 90 days long, signed with a key kept in `/var/lib/<app>/`. The password is stored only as a hash and changed in Settings. Changing it logs out every other session. Every request is checked in one `before_request`, which lets through only `login`, `static` and `healthz`. Pages redirect to `/login?next=…`; `/api/*` answers `401 {"error": "Log in again."}`.
 - **`/healthz`:** no login, and it says nothing about the app's contents: `{"ok": true, "busy": ["import"]}`. `busy` names any job a restart now would cut short.
 - **Settings page:** the app's own settings, then the password, then the **Design system** card (`DESIGN-SPEC.md` 7.14) last.
+- **A version and an About page** (`DESIGN-SPEC.md` 7.15): `__version__` in the package, passed to `init_design(..., version=__version__)`, the shared sidebar footer (Sign out, theme switch, `v1.0.0 · sha · About`) and `/about`.
 - **JSON APIs:** actions are `POST` with a JSON body, answering JSON. Errors are `{"error": "…"}` with a 4xx status, written for a person to read.
 - **Feedback:** toasts (`toast.js`) for results, inline confirm popovers (`DESIGN-SPEC.md` 7.10) for anything destructive. Never `alert()` or `window.confirm()`.
 - **Behind a proxy:** `ProxyFix(app.wsgi_app, x_proto=1, x_host=1)`, so links are right through h2s or Tailscale.
