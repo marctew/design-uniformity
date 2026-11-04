@@ -588,7 +588,7 @@ state_dir = "/var/lib/hmm-browser/design"  # status.json, prefs.json and the Che
 channel = "stable"                     # or a tag like "v1.1" to pin
 deploy = "scripts/update.sh --if-idle" # optional; the app's own deploy (APP-STANDARD.md 6)
 health = "http://127.0.0.1:8765/healthz" # anything below 500 counts as up
-# state_owner = "1000"                 # Docker apps: the container's user, so it can write the flags
+# state_owner = "claude"               # the user the app runs as, by name (Docker: whoever has the container's uid)
 # push = false                         # commit only
 
 [files]                                # release path = where it goes in the repo; a trailing / copies a folder
