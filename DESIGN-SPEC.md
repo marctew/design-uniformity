@@ -467,7 +467,8 @@ These are Apache ECharts with one shared theme, from Binge Stats' `static/js/cha
     - another service's brand mark used as that service's sign-in button (Binge's Plex-gold button);
     - HTML bars that mirror the chart palette (11);
     - map backgrounds behind themed tiles;
-    - the thin white rings round posters and the white knob of a switch, which suit both themes.
+    - the thin white rings round posters and the white knob of a switch, which suit both themes;
+    - white text and icons on a dark scrim over artwork (a thumbnail's duration label, a ☆ over a poster), since the artwork is the same in both themes.
 - **Print, where it matters:** print forces light tokens (Binge's Wrapped).
 
 ## 14. Scrollbars
@@ -591,4 +592,5 @@ health = "http://127.0.0.1:8765/healthz" # anything below 500 counts as up
 | 2026-11-04 | Added the updater (`tools/du_sync.py`), the Design system card (7.14) and releases from GitHub (18.1). Added `.row`, `.row-between` and the plain-CSS helpers to the Tailwind entry. | – |
 | 2026-11-04 | Added `confirm_button` and the `.confirm` popover (7.10), which replace `window.confirm()`. `md` and `xl` are allowed for grid and table columns only (6). Listed the allowed hard-coded colours (13). | Binge Stats |
 | 2026-11-04 | Added `js/confirm.js` (7.10), the inline confirm for plain forms, and the `image` glyph. | Vital Signs |
+| 2026-11-04 | The Design system card sends a CSRF token (`data-csrf`, as `X-CSRF-Token`) for apps that check one on every POST. White text on a dark scrim over artwork is an allowed hard-coded colour (13). | PodBridge |
 | 2026-11-04 | Added `APP-STANDARD.md`: how every app is built, run and deployed, with The Back Room as the reference app. The 18.1 example now uses `/healthz` and `scripts/update.sh`. | The Back Room |
