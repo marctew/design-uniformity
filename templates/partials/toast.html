@@ -1,0 +1,3 @@
+{#- Returned by an htmx action into #toasts (hx-target="#toasts" hx-swap="beforeend"). kind: ok | error -#}
+<div class="toast {{ 'error' if kind == 'error' }}" x-data="{ show: true }" x-show="show" x-transition.opacity
+     x-init="setTimeout(() => { show = false; setTimeout(() => $el.remove(), 300) }, 4500)">{{ message }}</div>

@@ -1,0 +1,59 @@
+{#- Design Uniformity: the app shell. Sidebar on desktop (lg, 1024px+), top bar and bottom nav on phones.
+    Each app supplies: app_name ("Binge" + "Stats" split for the gradient), nav [(endpoint, label, glyph, [active endpoints])],
+    and an icon at static/img/icon.svg. Works with uniform.css (plain) or the Tailwind preset: same class names. -#}
+{% from "macros/icons.html" import icon %}
+{% set app_first, app_second = app_name_parts | default(('My', 'App')) %}
+<!doctype html>
+<html lang="en-GB" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  {% include "partials/theme_head.html" %}
+  <title>{% block title %}{{ app_first }} {{ app_second }}{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/icon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <a href="/" class="brand"><img src="{{ url_for('static', filename='img/icon.svg') }}" alt=""><span>{{ app_first }} <span class="brand-gradient">{{ app_second }}</span></span></a>
+    <nav class="nav">
+      {% for ep, label, glyph, eps in nav %}
+      <a href="{{ url_for(ep) }}" class="nav-link {{ 'active' if request.endpoint in eps }}">{{ icon(glyph) }}{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid rgb(var(--border))">
+      {% block sidebar_foot %}{% include "partials/theme_switch.html" %}{% endblock %}
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <a href="/" class="brand" style="margin:0;padding:0;font-size:16px"><img src="{{ url_for('static', filename='img/icon.svg') }}" alt="" style="width:28px;height:28px"><span>{{ app_first }} <span class="brand-gradient">{{ app_second }}</span></span></a>
+    {% block topbar_action %}{% endblock %}
+  </header>
+
+  <main class="main">
+    {% block banners %}{% endblock %}
+    {% block content %}{% endblock %}
+  </main>
+
+  {#- Phones: up to five entries; with more, the fifth is a More menu. -#}
+  <nav class="bottom-nav">
+    {% for ep, label, glyph, eps in (nav if nav | length <= 5 else nav[:4]) %}
+    <a href="{{ url_for(ep) }}" class="{{ 'active' if request.endpoint in eps }}">{{ icon(glyph) }}{{ label }}</a>
+    {% endfor %}
+    {% if nav | length > 5 %}
+    <div class="menu-wrap" x-data="{ more: false }" style="display:flex;justify-content:center">
+      <button type="button" @click="more = !more">{{ icon('stack') }}More</button>
+      <div class="menu" x-cloak x-show="more" @click.outside="more = false" style="top:auto;bottom:100%;margin-bottom:8px">
+        {% for ep, label, glyph, eps in nav[4:] %}<a class="menu-item" href="{{ url_for(ep) }}">{{ icon(glyph, 'icon-sm') }}{{ label }}</a>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </nav>
+</div>
+<div id="toasts" class="toasts"></div>
+{% block scripts %}{% endblock %}
+</body>
+</html>
