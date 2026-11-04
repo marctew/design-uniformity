@@ -569,7 +569,7 @@ This folder is the source of truth.
 This folder is the git repo `github.com/marctew/design-uniformity` (public: there's nothing secret in a design system).
 - **Releases:** `python tools/release.py 1.1` writes `version.json` and `MANIFEST.sha256`, commits, and tags `v1.1`. Nothing reaches an app yet.
 - **Testing a release:** pin one app to it (`channel = "v1.1"` in its config) and press **Check now** there.
-- **Going live:** `python tools/release.py promote 1.1` points the `stable` tag at it. Every app on `stable` picks it up in its nightly check (02:30 plus up to 2 hours, spread out), or straight away with **Check now**.
+- **Going live:** `python tools/release.py promote 1.1` points the `stable` tag at it. GitHub caches tag downloads for a minute or so, so a Check now straight after promoting can still say "Up to date"; try again a minute later. Every app on `stable` picks it up in its nightly check (02:30 plus up to 2 hours, spread out), or straight away with **Check now**.
 
 On each app's host, `du_sync.py` (installed in `/opt/design-uniformity`, run as root by systemd):
 1. downloads the release's tarball from GitHub and checks every file against its manifest;
