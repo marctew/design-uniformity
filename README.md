@@ -2,7 +2,7 @@
 
 The shared look for Marc's web apps, taken from Binge Stats.
 
-- **Read first:** `DESIGN-SPEC.md`.
+- **Read first:** `DESIGN-SPEC.md` for how apps look, and `APP-STANDARD.md` for how they're built, run and deployed.
 - **See it:** open `preview.html` in a browser. It works straight from disk. Switch the theme and accent at the top, and click any glyph to copy its SVG.
 
 ## Using it in an app
@@ -49,6 +49,7 @@ On an app's host: write `/etc/design-uniformity/<app>.toml` (example in `DESIGN-
 
 ```
 DESIGN-SPEC.md                 the spec
+APP-STANDARD.md                how apps are built: Flask package, gunicorn, systemd, /healthz, update.sh
 preview.html                   everything on one page
 css/uniform.css                plain CSS: tokens + components
 css/accents.css                accent families, one per category (blue, graphite, teal, fuchsia)

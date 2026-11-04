@@ -567,16 +567,18 @@ app = "The Back Room"
 repo = "/opt/hmm-browser"              # the app's git working copy
 state_dir = "/var/lib/hmm-browser/design"  # status.json, prefs.json and the Check now flags
 channel = "stable"                     # or a tag like "v1.1" to pin
-deploy = "systemctl restart hmm-browser"   # optional; Binge uses scripts/update.sh
-health = "http://127.0.0.1:8765/login" # anything below 500 counts as up
+deploy = "scripts/update.sh --if-idle" # optional; the app's own deploy (APP-STANDARD.md 6)
+health = "http://127.0.0.1:8765/healthz" # anything below 500 counts as up
 # state_owner = "1000"                 # Docker apps: the container's user, so it can write the flags
 # push = false                         # commit only
 
 [files]                                # release path = where it goes in the repo; a trailing / copies a folder
-"css/uniform.css" = "static/design/uniform.css"
-"js/design-card.js" = "static/design/design-card.js"
-"tools/du_flask.py" = "du_flask.py"
+"css/uniform.css" = "backroom/static/design/uniform.css"
+"js/design-card.js" = "backroom/static/design/design-card.js"
+"tools/du_flask.py" = "backroom/du_flask.py"
 ```
+
+`APP-STANDARD.md` 7 has a standard app's whole config.
 
 `du_sync.py install <config>` writes the units: `du-sync-<app>.timer` (nightly) and `du-sync-<app>.path` (runs as soon as the card leaves a flag). `du_sync.py status <config>` prints where it stands. Design files in an app are never edited there: change them here, release, promote.
 
@@ -588,3 +590,4 @@ health = "http://127.0.0.1:8765/login" # anything below 500 counts as up
 | 2026-11-04 | Accents are now one per category. Added graphite (Infrastructure) and fuchsia (Files and tools). | Binge Stats (no change needed) |
 | 2026-11-04 | Added the updater (`tools/du_sync.py`), the Design system card (7.14) and releases from GitHub (18.1). Added `.row`, `.row-between` and the plain-CSS helpers to the Tailwind entry. | – |
 | 2026-11-04 | Added `confirm_button` and the `.confirm` popover (7.10), which replace `window.confirm()`. `md` and `xl` are allowed for grid and table columns only (6). Listed the allowed hard-coded colours (13). | Binge Stats |
+| 2026-11-04 | Added `APP-STANDARD.md`: how every app is built, run and deployed, with The Back Room as the reference app. The 18.1 example now uses `/healthz` and `scripts/update.sh`. | The Back Room |
