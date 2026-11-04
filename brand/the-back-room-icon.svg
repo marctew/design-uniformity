@@ -1,0 +1,9 @@
+<!-- The Back Room: Design Uniformity app icon (Media: violet to pink). A door, slightly ajar. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ec4899"/></linearGradient></defs>
+  <rect width="64" height="64" rx="16" fill="url(#g)"/>
+  <path d="M19 50V16.5A2.5 2.5 0 0 1 21.5 14h21a2.5 2.5 0 0 1 2.5 2.5V50Z" fill="#fff" opacity=".7"/>
+  <path d="M23 50V17.6a1.5 1.5 0 0 1 1.9-1.4l13.2 3.5a2 2 0 0 1 1.4 1.9V50Z" fill="#fff"/>
+  <circle cx="35" cy="35" r="1.9" fill="url(#g)"/>
+  <rect x="14" y="49" width="36" height="2.5" rx="1.25" fill="#fff" opacity=".85"/>
+</svg>
