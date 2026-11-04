@@ -8,7 +8,7 @@ How Marc's homelab apps are built, so every app is put together, run and updated
 
 | | Standard | Why |
 |---|---|---|
-| Language | Python 3 from the distro | One toolchain to keep up to date: `apt`, no virtualenvs to drift. |
+| Language | Python 3 from the distro, with packages from `apt` where it has them | One toolchain to keep up to date. When an app needs packages `apt` lacks (or too old), it uses `.venv/` in the checkout, filled from `requirements.txt` by `scripts/update.sh`, as Vital Signs does. |
 | Web | Flask, Jinja templates rendered on the server | Every app is already Flask, or is being rewritten into it. |
 | Server | gunicorn, **one worker**, many threads (`--threads 32`) | Apps keep jobs and caches in memory, so there must be one process. Threads let video streams and slow requests run side by side. |
 | Process | a systemd service, one app per LXC | Restarts, logs and start-up order come free. |
@@ -48,7 +48,8 @@ How Marc's homelab apps are built, so every app is put together, run and updated
 ```
 
 - **Modules import downwards** (`config` → `web` → shared logic → pages) and never in a loop. A module that needs something from a "higher" one means that something belongs lower.
-- **Routes keep their plain endpoint names** (`@app.route` on the one `app`, not blueprints), so `url_for("settings_page")` works everywhere.
+- **One way to make the app per app.** Either one module-level `app` with plain endpoint names (The Back Room), or a `create_app()` factory with a blueprint per module (Vital Signs, whose tests build a fresh app each time). Don't convert one to the other.
+- **A repo with more than one program** names each package after its program (Vital Signs has `server/` and `agent/`), and `wsgi.py` serves the web one.
 - **Templates are `.html` files**, so Jinja autoescapes them. Never `render_template_string` or a `DictLoader`.
 
 ## 3. Running
@@ -76,7 +77,7 @@ WantedBy=multi-user.target
 | What | Where |
 |---|---|
 | Code (the git checkout) | `/opt/<app>` |
-| Secrets | `/etc/<app>.env`, `chmod 600 root`. Never in the repo, never in the unit, never in a page. |
+| Secrets | `/etc/<app>.env`, `chmod 600 root`, or a config file in `/etc/<app>/` when settings are richer than a list of variables (Vital Signs' `server.toml`). Never in the repo, never in the unit, never in a page. |
 | Data | `/var/lib/<app>/` |
 | Caches | `/var/cache/<app>/` |
 | Design updater state | `/var/lib/<app>/design/` |
@@ -111,6 +112,8 @@ Every app has one, run as root on its host. It:
 4. restarts the service and waits up to a minute for `/healthz`. If that doesn't come, it prints the last of the journal and fails.
 
 Exit codes: 0 means deployed (or deliberately left for later with `--if-idle`), 1 means something is wrong, 2 means a bad option.
+
+Read `/healthz` with Python's `urllib`, not `curl`: not every LXC has `curl` (Vital Signs' doesn't).
 
 ## 7. The design updater
 
@@ -152,7 +155,7 @@ One app at a time, each in its own commit:
 | App | Status |
 |---|---|
 | The Back Room | Reference app, 2026-11-04 |
-| Vital Signs | Next |
+| Vital Signs | Done 2026-11-04: gunicorn, `/healthz`, `scripts/update.sh`, restyled. Keeps its venv, TOML config and `server/` + `agent/` layout |
 | PodBridge | Moves from Docker to systemd |
 | Encore | Rewrite from aiohttp |
 | Binge Stats | Commit today's changes first; stays in Docker (section 1) |

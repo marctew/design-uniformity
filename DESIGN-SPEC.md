@@ -280,7 +280,7 @@ Keep the text to one or two words. Add a dot or glyph only when the badge stands
 | **Toast** | The result of an action you just took ("Moved. It's High priority now…", "Can't reach the Pi in the garage") | Bottom centre on phones, above the bottom nav. Bottom right on desktop. Fades out after about 4.5 s. |
 | **Flash** | The result of a full-page form post | Top of `<main>`, success or danger tint |
 
-There are no modal alerts, and never `window.confirm()`. A destructive action asks first with the `confirm_button` macro: an inline popover by the button with the question, **Cancel** and a danger button naming the action ("Delete this channel? Nothing more is sent to it." / Cancel / Delete channel). It closes on Cancel, Escape or a click outside. Use a modal only for a confirm that needs a lot of reading, and keep it rare.
+There are no modal alerts, and never `window.confirm()`. A destructive action asks first with the `confirm_button` macro: an inline popover by the button with the question, **Cancel** and a danger button naming the action ("Delete this channel? Nothing more is sent to it." / Cancel / Delete channel). It closes on Cancel, Escape or a click outside. Use a modal only for a confirm that needs a lot of reading, and keep it rare. Apps without Alpine put `data-confirm="Question?"` on the form (or on one button) and load `js/confirm.js`, which shows the same popover; the danger button repeats the submit button's label unless `data-confirm-yes` says otherwise.
 
 ### 7.11 Empty states (`empty_state`)
 
@@ -590,4 +590,5 @@ health = "http://127.0.0.1:8765/healthz" # anything below 500 counts as up
 | 2026-11-04 | Accents are now one per category. Added graphite (Infrastructure) and fuchsia (Files and tools). | Binge Stats (no change needed) |
 | 2026-11-04 | Added the updater (`tools/du_sync.py`), the Design system card (7.14) and releases from GitHub (18.1). Added `.row`, `.row-between` and the plain-CSS helpers to the Tailwind entry. | – |
 | 2026-11-04 | Added `confirm_button` and the `.confirm` popover (7.10), which replace `window.confirm()`. `md` and `xl` are allowed for grid and table columns only (6). Listed the allowed hard-coded colours (13). | Binge Stats |
+| 2026-11-04 | Added `js/confirm.js` (7.10), the inline confirm for plain forms, and the `image` glyph. | Vital Signs |
 | 2026-11-04 | Added `APP-STANDARD.md`: how every app is built, run and deployed, with The Back Room as the reference app. The 18.1 example now uses `/healthz` and `scripts/update.sh`. | The Back Room |
