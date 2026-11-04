@@ -85,6 +85,8 @@ WantedBy=multi-user.target
 
 New apps use one name for the folder, service and env file. Older apps keep the names they have (The Back Room is `hmm-browser`) rather than risk a rename.
 
+**Apps that serve large files with Range requests** (video, audio): gunicorn's `wsgi.file_wrapper` can't seek, so Werkzeug's `send_file` reads and discards everything before the requested range. That made a seek halfway into a 300 MB video on NFS take 20 seconds in The Back Room. Hand `send_file` Werkzeug's own wrapper instead; copy `_seekable_files` from The Back Room's `backroom/web.py`, and time a mid-file Range request before switching an app to gunicorn.
+
 **Background jobs** (rescans, imports, polling) start in `start_workers()`, which `wsgi.py` calls once in the gunicorn worker. Each job keeps its state in a dict with a `"running"` flag, and `health.py` lists those flags.
 
 ## 4. What every app has
