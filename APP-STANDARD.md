@@ -97,7 +97,7 @@ New apps use one name for the folder, service and env file. Older apps keep the 
 - **`/healthz`:** no login, and it says nothing about the app's contents: `{"ok": true, "busy": ["import"]}`. `busy` names any job a restart now would cut short.
 - **Settings page:** the app's own settings, then the password, then the **Design system** card (`DESIGN-SPEC.md` 7.14) last.
 - **A version and an About page** (`DESIGN-SPEC.md` 7.15): `__version__` in the package, passed to `init_design(..., version=__version__)`, the shared sidebar footer (Sign out, theme switch, `v1.0.0 · sha · About`) and `/about`.
-- **JSON APIs:** actions are `POST` with a JSON body, answering JSON. Errors are `{"error": "…"}` with a 4xx status, written for a person to read.
+- **JSON APIs:** actions are `POST` with a JSON body, answering JSON. Errors are `{"error": "…"}` with a 4xx status, written for a person to read. These are the app's own page APIs. What other things read (displays, Docket, Home Assistant) is the public `/api/v1/` in **`API-STANDARD.md`**.
 - **Feedback:** toasts (`toast.js`) for results, inline confirm popovers (`DESIGN-SPEC.md` 7.10) for anything destructive. Never `alert()` or `window.confirm()`.
 - **Behind a proxy:** `ProxyFix(app.wsgi_app, x_proto=1, x_host=1)`, so links are right through h2s or Tailscale.
 
