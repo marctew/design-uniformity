@@ -359,7 +359,7 @@ A **GitHub** button sits in the page header when the repo is public or the user 
 
 ## 9. Glyphs
 
-There are 61 glyphs in `glyphs/`. Binge Stats' set is the core; the rest were added for other apps in the same hand.
+There are 69 glyphs in `glyphs/`. Binge Stats' set is the core; the rest were added for other apps in the same hand.
 
 ### 9.1 Drawing rules: every glyph, no exceptions
 
@@ -391,11 +391,12 @@ There are 61 glyphs in `glyphs/`. Binge Stats' set is the core; the rest were ad
 | Group | Glyphs |
 |---|---|
 | Navigation | `home` `grid` `activity` `history` `chart` `bulb` `users` `user` `stack` `bell` `settings` `menu` `more` `logout` |
-| Actions | `plus` `pencil` `trash` `x` `check` `search` `filter` `refresh` `upload` `download` `send` `copy` `link` `external` `eye` `lock` `power` `grip` `to-top` `to-bottom` |
+| Actions | `plus` `pencil` `trash` `x` `check` `search` `filter` `refresh` `upload` `download` `send` `copy` `link` `external` `eye` `lock` `power` `grip` `to-top` `to-bottom` `star` `tag` |
 | Direction | `chevron-up` `chevron-down` `chevron-left` `chevron-right` |
 | Status | `info` `alert` `check-circle` `bolt` `buffer` `clock` `calendar` |
-| Media and playback | `play` `pause` `stop` `tv` `film` `music` |
-| Devices and network | `device` `monitor` `server` `chip` `lan` `wan` |
+| Media and playback | `play` `pause` `stop` `tv` `film` `image` `music` |
+| Devices and network | `device` `monitor` `server` `chip` `lan` `wan` `headset` |
+| Maps and outdoors | `map` `route` `pin` `paw` |
 | Theme | `sun` `moon` `monitor` |
 | App-specific, don't reuse | `plex` (the Plex mark), `home-assistant` |
 
@@ -421,6 +422,8 @@ Use the same glyph for the same idea in every app:
 | On the local network | `lan` | Over the internet | `wan` |
 | Turn on or off, restart | `power` | Secret / locked setting | `lock` |
 | Reorder by dragging | `grip` | Send to top / bottom | `to-top` / `to-bottom` |
+| A map view | `map` | A planned or saved route | `route` |
+| A place or position | `pin` | Dogs / pets | `paw` |
 
 ### 9.5 Adding a glyph
 
@@ -616,3 +619,4 @@ health = "http://127.0.0.1:8765/healthz" # anything below 500 counts as up
 | 2026-11-04 | The Design system card sends a CSRF token (`data-csrf`, as `X-CSRF-Token`) for apps that check one on every POST. White text on a dark scrim over artwork is an allowed hard-coded colour (13). | PodBridge |
 | 2026-11-04 | Added `APP-STANDARD.md`: how every app is built, run and deployed, with The Back Room as the reference app. The 18.1 example now uses `/healthz` and `scripts/update.sh`. | The Back Room |
 | 2026-11-05 | `APP-STANDARD.md`: every app is done, and claude-ops is recorded as the second exception (FastMCP and Docker, the look inlined by hand, no updater). Encore, PodBridge and claude-ops icons added to `brand/`. | claude-ops |
+| 2026-11-05 | The `map`, `route`, `pin` and `paw` glyphs, in a new Maps and outdoors group (9.3, 9.4). The 9.3 table now also lists `star`, `tag`, `image` and `headset`. | – |

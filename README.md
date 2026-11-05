@@ -56,7 +56,7 @@ css/uniform.css                plain CSS: tokens + components
 css/accents.css                accent families, one per category (blue, graphite, teal, fuchsia)
 css/tailwind.preset.js         Tailwind preset
 css/tailwind-components.css    Tailwind entry: tokens + components
-glyphs/svg/                    62 glyphs, one file each
+glyphs/svg/                    69 glyphs, one file each
 glyphs/icons.svg               the same as a sprite
 glyphs/glyphs.json             name -> SVG, grouped
 templates/base.html            app shell (sidebar, top bar, bottom nav)

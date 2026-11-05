@@ -64,7 +64,11 @@ export const GLYPHS = {
  "power": "<path d=\"M12 3v9\"/><path d=\"M6.3 6.3a8 8 0 1 0 11.4 0\"/>",
  "grid": "<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/>",
  "check-circle": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m8 12 3 3 5-6\"/>",
- "home-assistant": "<path d=\"M3 11.5 12 4l9 7.5\"/><path d=\"M5 10v10h14V10\"/><circle cx=\"12\" cy=\"14\" r=\"2\"/><path d=\"M12 16v4M12 12V9\"/>"
+ "home-assistant": "<path d=\"M3 11.5 12 4l9 7.5\"/><path d=\"M5 10v10h14V10\"/><circle cx=\"12\" cy=\"14\" r=\"2\"/><path d=\"M12 16v4M12 12V9\"/>",
+ "map": "<path d=\"M9 4 3 6.5V20l6-2.5 6 2.5 6-2.5V4l-6 2.5L9 4Z\"/><path d=\"M9 4v13.5M15 6.5V20\"/>",
+ "route": "<circle cx=\"5.5\" cy=\"18.5\" r=\"2.5\"/><path d=\"M8 18.5h9a3.25 3.25 0 0 0 0-6.5H7a3.25 3.25 0 0 1 0-6.5h9\"/><circle cx=\"18.5\" cy=\"5.5\" r=\"2.5\"/>",
+ "pin": "<path d=\"M12 21.5s-7-6.1-7-11.5a7 7 0 0 1 14 0c0 5.4-7 11.5-7 11.5Z\"/><circle cx=\"12\" cy=\"10\" r=\"2.5\"/>",
+ "paw": "<circle cx=\"5.5\" cy=\"10.5\" r=\"1.8\"/><circle cx=\"9\" cy=\"6\" r=\"1.8\"/><circle cx=\"15\" cy=\"6\" r=\"1.8\"/><circle cx=\"18.5\" cy=\"10.5\" r=\"1.8\"/><path d=\"M12 12c-2.6 0-5.5 3.4-5.5 5.9 0 1.6 1.3 2.4 2.7 2.2 1.1-.2 1.8-.8 2.8-.8s1.7.6 2.8.8c1.4.2 2.7-.6 2.7-2.2 0-2.5-2.9-5.9-5.5-5.9Z\"/>"
 };
 export function icon(name, cls = 'icon') {
   return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GLYPHS[name] || ''}</svg>`;
