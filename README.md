@@ -63,6 +63,6 @@ templates/macros/icons.html    Jinja icon() macro
 templates/macros/ui.html       Jinja components
 templates/partials/            theme head, theme switch, toast, design card, sidebar footer, About page
 js/icons.js, toast.js, chart-palette.js, design-card.js, confirm.js (inline confirm for plain forms)
-brand/                         Binge Stats icon, app-icon template, teal example
+brand/                         each app's icon, the app-icon template, teal example
 tools/                         du_sync.py (updater), du_flask.py (Settings card API), release.py, check_du_sync.py
 ```
