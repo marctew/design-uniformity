@@ -2,7 +2,7 @@
 
 How Marc's apps let other things read and drive them: Docket's briefs, Vital Signs screens, the ESP32 panels, the widget display, Home Assistant, n8n and TRMNL. `APP-STANDARD.md` says how an app is built; this says what its outside API looks like, so a reader written once works against every app.
 
-**Status:** draft 1, 5 Nov 2026. Not released to the apps yet. Decisions taken with Marc on 5 Nov 2026 are marked **(decided)**.
+**Status:** draft 2, 5 Nov 2026. Not released to the apps yet. Decisions taken with Marc on 5 Nov 2026 are marked **(decided)**. Draft 2 takes in the feedback from Binge Stats' pilot plan (section 16). **Binge Stats builds this first, as the pilot (decided)**, and the shared code is lifted out of it (sections 12 and 14).
 
 ## 1. What it's for
 
@@ -16,6 +16,8 @@ How Marc's apps let other things read and drive them: Docket's briefs, Vital Sig
 | **The widget display** and any kiosk | A browser on the LAN | Display pages that just need a URL. |
 
 What it isn't: a replacement for an app's own page JSON. Each app keeps its private `/api/...` routes for its own UI, with the session cookie and CSRF (`APP-STANDARD.md` 4). The public contract lives only under **`/api/v1/`**, plus `/display/` and `/healthz`.
+
+**Apps that already have a `/api/v1/`** (Binge Stats) keep every existing route exactly as it is (path, shape and error shape), because live readers depend on them. The standard's routes are added beside them. The old routes do pick up the shared token handling (URL tokens, lockout, ETags, rate limit), since none of that changes their bodies.
 
 ## 2. The shape of it
 
@@ -39,8 +41,9 @@ Readers send `Accept: application/json` (except for images, events and display p
 - **Made in the app's Settings,** on an **API tokens** card (a shared partial in this repo), with a name ("Vital Signs desk", "TRMNL kitchen") and a scope: **read** or **write**. A write token can also read.
 - **Shown once,** stored only as a SHA-256 hash, with `created_at` and `last_used_at` shown on the card. Revoke is one click. This is how Binge Stats already does it; it's the model.
 - **Sent as** `Authorization: Bearer <token>`.
-- **Read tokens may also go in the URL** as `?token=…` **(decided)**, because TRMNL's cloud polling and simple firmware can't always set a header. Write tokens are refused in the URL with `400 {"error": "Write tokens go in the Authorization header, never the URL."}`. URLs end up in logs, so a URL token should be a display's own read token, easy to revoke. Apps never log query strings for `/api/v1/` and `/display/`.
-- **A signed-in browser** (the app's own session cookie) can read every `/api/v1/` GET too, so the app's own pages and its `/display/` previews work without a token. Writes from a session still need CSRF.
+- **Read tokens may also go in the URL** as `?token=…` **(decided)**, because TRMNL's cloud polling and simple firmware can't always set a header. Write tokens are refused in the URL with `400 {"error": "Write tokens go in the Authorization header, never the URL."}`. URLs end up in logs, so a URL token should be a display's own read token, easy to revoke.
+- **Tokens never reach a log.** gunicorn's default access log has the query string (`%(r)s`, `%(q)s`) and the referrer (`%(f)s`), so every app sets `--access-logformat '%(h)s %(t)s "%(m)s %(U)s %(H)s" %(s)s %(b)s "%(a)s"'` (`APP-STANDARD.md` 3): the path without the query string, and no referrer. The app's own logging never prints `request.url` or `request.full_path` for these paths, and `/display/` pages send `Referrer-Policy: no-referrer`.
+- **A signed-in admin** (the app's own session cookie) can read every `/api/v1/` GET too, so the app's own pages and its `/display/` previews work without a token. In an app with viewer or other non-admin logins (Binge Stats), only an admin session counts; any other session is treated as no session. Writes from a session still need CSRF.
 - **Bad tokens:** `401 {"error": "That token isn't valid. Make a new one in Settings → API tokens."}`. Ten bad tokens from one address in a minute lock that address out for 15 minutes with `429` and `Retry-After`, the same rule as Docket's MCP. A good token with the wrong scope gets `403`.
 - **Secrets an app holds for others** (Plex tokens, indexer keys, a mail password) never appear in any `/api/v1/` answer, image URL or display page.
 
@@ -114,7 +117,7 @@ Readers send `Accept: application/json` (except for images, events and display p
 {"error": "There's no feed called 'arivals'.", "code": "not_found"}
 ```
 
-`error` is a sentence for a person (`APP-STANDARD.md` 4). `code` is for machines: `bad_request`, `unauthorised`, `forbidden`, `not_found`, `rate_limited`, `busy`, `upstream` (the app couldn't reach Plex, SABnzbd...), `error`. `429` and `503` always carry `Retry-After`.
+This shape is for the standard's routes. An app's older `/api/v1/` routes keep the error shape they already had (section 1). `error` is a sentence for a person (`APP-STANDARD.md` 4). `code` is for machines: `bad_request`, `unauthorised`, `forbidden`, `not_found`, `rate_limited`, `busy`, `upstream` (the app couldn't reach Plex, SABnzbd...), `error`. `429` and `503` always carry `Retry-After`.
 
 ### Meta
 
@@ -138,7 +141,7 @@ Readers send `Accept: application/json` (except for images, events and display p
 ## 6. Images
 
 - `GET /api/v1/images/<kind>/<id>?w=320` (or `h=`). The app fetches the original with its own credentials, resizes it, and answers `image/webp` (or `image/jpeg` if the reader's `Accept` doesn't list WebP, for ESP32 decoders).
-- Widths snap to 80, 160, 320, 640 and 1280, so caches stay small. Resized images are cached on disk in `/var/lib/<app>/image-cache/` and served with `Cache-Control: public, max-age=86400` and an ETag.
+- Widths snap to 80, 160, 320, 640 and 1280, so caches stay small. Resized images are cached on disk in `/var/cache/<app>/images/` (`APP-STANDARD.md` 3), or under the app's data volume for an app in Docker (Binge Stats: `/data/image-cache/`). Each file is named by a hash of kind, id, width, format, quality and grey. They're served with `Cache-Control: public, max-age=86400` and an ETag, and pruned oldest-first (by mtime) above 500 MB by a background job.
 - `?fmt=jpeg&q=70` is allowed for devices that need it. `?gray=1` gives greyscale for e-ink.
 - An image path in a feed works with the same token the feed was read with, so a display can load it straight away.
 
@@ -156,10 +159,24 @@ Readers send `Accept: application/json` (except for images, events and display p
 ### Events stream
 
 - `GET /api/v1/events` is **server-sent events** (`text/event-stream`). Read token (URL or header).
-- Each event: `event: <type>`, `id: <increasing number>`, `data: {"type": "...", "at": "...Z", "title": "...", "item": {...item shape...}}`. Types are dotted and listed in `meta` (`arrival`, `download.finished`, `task.due`, `watch.fired`).
-- `: ping` every 25 seconds, so proxies don't close it.
-- Reconnecting with `Last-Event-ID` replays what was missed from a short in-memory ring (the last 200 events or 1 hour).
-- **Capacity:** gunicorn has one worker and a fixed thread pool, so an app allows at most **8 open streams** and answers `503` with `Retry-After: 30` beyond that. Each stream uses one thread; apps that adopt events raise `threads` by 8.
+- Each event: `event: <type>`, `id: <row id>`, `data: {"type": "...", "at": "...Z", "title": "...", "item": {...item shape...}}`. Types are dotted and listed in `meta` (`arrival`, `download.finished`, `task.due`, `watch.fired`).
+- **Events go through SQLite, not memory.** Apps can have more than one gunicorn worker, and a separate worker process where events actually start (Binge Stats has both). So `publish()` writes a row to a small table, from whichever process sees the event, and each open stream reads new rows from it:
+
+  ```sql
+  CREATE TABLE events (
+    id    INTEGER PRIMARY KEY,   -- the SSE id and Last-Event-ID
+    type  TEXT NOT NULL,         -- dotted, e.g. playback.start
+    at    TEXT NOT NULL,         -- UTC ...Z (an app that stores epoch seconds may store those, and convert at the edge)
+    title TEXT NOT NULL,
+    item  TEXT NOT NULL          -- JSON, the item shape
+  );
+  CREATE INDEX events_at ON events (at);
+  ```
+
+- A stream checks for new rows once a second, with a read-only query on its own connection, and sends `: ping` every 25 seconds so proxies don't close it.
+- Reconnecting with `Last-Event-ID` (the header, or `?last_event_id=`) replays up to 200 rows after that id. Without one, nothing is replayed. A background job prunes rows older than an hour but always keeps the last 200.
+- **Capacity:** at most **8 open streams per app, split across its gunicorn workers** (one worker: 8; two workers: 4 each). Beyond that, `503` with `Retry-After: 30`. Each stream holds a thread, so an app that adopts events raises `--threads` to leave at least 8 free for everything else.
+- On `SIGTERM` the stream ends, so `scripts/update.sh` restarts don't hang.
 - Through Cloudflare, streams work but are closed after about 100 seconds without data; the 25-second ping prevents that.
 
 ### Webhooks out
@@ -167,7 +184,7 @@ Readers send `Accept: application/json` (except for images, events and display p
 For Home Assistant and n8n, which handle incoming webhooks better than streams:
 
 - Settings → **Webhooks**: a URL, the event types to send, and a secret.
-- Docket-style delivery: each event is POSTed as JSON (the same `data` as the stream), with `X-Signature: sha256=<HMAC of the body with the secret>`, retried 3 times over 10 minutes, with failures shown in the app's activity log.
+- Docket-style delivery, always from a background job, never inside a request: each event makes one delivery per matching webhook, POSTed as JSON (the same `data` as the stream) with `X-Signature: sha256=<hex HMAC-SHA256 of the raw body with the secret>` and a 10-second timeout. A failure is retried after 1, 3 and 6 minutes, then given up, with the last success and last error shown on the webhook's row in Settings.
 - Home Assistant's own webhook trigger (`/api/webhook/<id>`) is the expected target. Its id is the secret there, so the URL is stored like a password and never shown again in full.
 
 ### Push to Marc's phone
@@ -189,6 +206,7 @@ Unchanged: apps that need to tell Marc something use the self-hosted ntfy server
 - Answers aim to be small: status under 2 KB, a feed page under 50 KB. The ESP32s parse JSON in a few hundred KB of RAM.
 - An app that's busy (an import) still answers status quickly from what it has, with `state: "busy"`, rather than blocking.
 - Per-token limit: 120 requests a minute, then `429` with `Retry-After`. Images and events don't count towards it.
+- The rate limit and the bad-token lockout live in memory, per gunicorn worker. With two workers they're about twice as loose. That's accepted, since tokens are 256-bit, and an app says so in its `docs/API.md` rather than adding shared state.
 
 ## 11. Versioning
 
@@ -198,15 +216,15 @@ Unchanged: apps that need to tell Marc something use the self-hosted ntfy server
 
 ## 12. Shared code
 
-So each app doesn't write this from scratch, this repo gets (to build):
+So each app doesn't write this from scratch, this repo gets the shared code. **It's lifted out of Binge Stats' pilot (decided)**: Binge builds the generic part as `bingestats/web/api_core.py`, which imports nothing from Binge and talks to it only through `init_api(...)` and the callables passed in. Once that's proven against real readers, it moves here as `du_api.py` with as little change as possible, and Binge switches to the shared copy through the design updater.
 
 - **`tools/du_api.py`**, a Flask adapter like `du_flask.py`, carried by the design updater:
   - `init_api(app, data_dir, name=..., version=...)` registers `/api/v1/meta`, token checking, the URL-token rule, the lockout, ETags, error answers and query-string-free logging;
   - decorators `@feed("arrivals", title=..., refresh_s=...)`, `@action("queue_album", body=...)`, `@display("now-playing", sizes=[...])` that also fill `meta`;
-  - `publish(event_type, title, item)` for the events stream and webhooks;
+  - `publish(conn, event_type, title, item)` (writes the events row), a stream generator given a "rows after id" function, and webhook signing and the retry schedule;
   - `image_route(kind, fetch)` with resizing (Pillow) and the disk cache.
 - **`templates/partials/api_tokens_card.html`** and **`webhooks_card.html`** for Settings, after the app's own settings and before the Design system card.
-- **`templates/display/base.html`**: the display page shell (tokens, theme, the "last updated" note, the events client).
+- **`templates/display/base.html`**: the display page shell (tokens, theme, the "last updated" note, the events client). It's also written first in Binge, with no Binge-specific markup, and lifted unchanged.
 - **`tools/check_api.py <base_url> <token>`**: checks an app against this standard (meta, status shape, a feed's item shape, ETag and 304, a bad token, a URL write token refused) and prints what's wrong. Run it after each app's change, like `check_du_sync.py`.
 
 ## 13. Readers
@@ -221,10 +239,10 @@ How each reader uses it, once apps have it:
 
 ## 14. Rolling it out
 
-One app at a time, like the design system:
+One app at a time, like the design system. **Binge Stats goes first, as the pilot (decided 5 Nov 2026):** the shared code comes out of it rather than going into it.
 
-1. **This document,** reviewed by Marc, then released with the shared code (`du_api.py`, the cards, `check_api.py`) as a Design Uniformity version.
-2. **Binge Stats:** already has `/api/v1/` and tokens. Bring its answers to the common shapes (keep its current endpoints working, since the media panel uses them), add `meta`, `status`, images, events and a display page.
+1. **Binge Stats builds the standard in-app,** to its own plan (`docs/specs/api-standard.md` in its repo), in six stages: the shared core with `meta` and `status`, then feeds and images, actions, events and webhooks, the `now-playing` display page, and docs with checking. Its current endpoints stay exactly as they are (section 1).
+2. **Lift the shared code** into this repo (`du_api.py`, the API tokens and webhooks cards, the display shell, `check_api.py`), fix anything the pilot found in this document, and release it as a Design Uniformity version. Binge then moves onto the shared copy.
 3. **Docket:** `status` (due today, overdue, the night shift), feeds (`today`, `upcoming`, `reports`), actions (`add_task`, `complete_task`), events (`task.due`, `brief.published`, `watch.fired`, `approval.requested`). Then its reader side (section 13), which is step 8.
 4. **Encore** (downloads), **PodBridge** (new episodes, sync state), **Vital Signs** (its own status), **The Back Room** (status only, LAN only, unless Marc wants more).
 5. claude-ops is deployed only by Marc and keeps its own API; it isn't part of this unless he says so.
@@ -234,3 +252,17 @@ One app at a time, like the design system:
 1. **TRMNL:** does Marc have a TRMNL device to target, or is it only the builder for other people? It changes whether display pages need an 800x480 one-bit mode (`static=1&gray=1`) first.
 2. **Which display pages first?** Likely candidates: Binge "now playing", Docket "today", Encore "downloads".
 3. **HA discovery:** should apps also offer an MQTT discovery option (Stagehand already talks MQTT to HA), or is REST plus webhooks enough?
+
+## 16. Changes in draft 2
+
+From Binge Stats' pilot plan (5 Nov 2026), all accepted:
+
+1. **Events through SQLite** with the row id as `Last-Event-ID`, not an in-memory ring. This works with more than one gunicorn worker and with a separate worker process. The stream cap is 8 per app, split across workers. (Section 8.)
+2. **Existing `/api/v1/` routes keep their error shape.** Only the standard's routes must use `{"error", "code"}`. (Sections 1 and 5.)
+3. **Only an admin session** reads `/api/v1/` without a token, in apps with viewer or non-admin logins. (Section 3.)
+4. **The access-log format** that keeps tokens out of logs, and `Referrer-Policy: no-referrer` on display pages. (Section 3, and `APP-STANDARD.md` 3.)
+5. **Image cache path** under `/var/cache/<app>/` (matching `APP-STANDARD.md`), or the data volume for Docker apps. (Section 6.)
+6. **In-memory limits per worker are accepted** and documented, with no shared state. (Section 10.)
+
+Also: Binge is the pilot and the shared code is lifted from it (sections 12 and 14), and webhook delivery always runs in a background job, with a retry schedule of 1, 3 and 6 minutes (section 8).
+

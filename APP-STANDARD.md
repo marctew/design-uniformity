@@ -85,6 +85,14 @@ WantedBy=multi-user.target
 | Design updater state | `/var/lib/<app>/design/` |
 | Logs | the journal: `journalctl -u <service>` |
 
+**Keep tokens out of the access log.** gunicorn's default access line includes the query string and the referrer, and displays send read tokens as `?token=` (`API-STANDARD.md` 3). Add this to `ExecStart`, so the log has the path without the query string and no referrer:
+
+```ini
+--access-logformat '%%(h)s %%(t)s "%%(m)s %%(U)s %%(H)s" %%(s)s %%(b)s "%%(a)s"'
+```
+
+Every `%` is doubled because systemd reads `%` as one of its own specifiers. On a command line or in a Docker entrypoint, write it with single `%`s. Push-button links that carry a token in the path (Docket's `/n/<token>`) still show in this format. They're one-use and short-lived, and the journal is root-only.
+
 New apps use one name for the folder, service and env file. Older apps keep the names they have (The Back Room is `hmm-browser`) rather than risk a rename.
 
 **Apps that serve large files with Range requests** (video, audio): gunicorn's `wsgi.file_wrapper` can't seek, so Werkzeug's `send_file` reads and discards everything before the requested range. That made a seek halfway into a 300 MB video on NFS take 20 seconds in The Back Room. Hand `send_file` Werkzeug's own wrapper instead; copy `_seekable_files` from The Back Room's `backroom/web.py`, and time a mid-file Range request before switching an app to gunicorn.
