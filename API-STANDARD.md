@@ -2,7 +2,7 @@
 
 How Marc's apps let other things read and drive them: Docket's briefs, Vital Signs screens, the ESP32 panels, the widget display, Home Assistant, n8n and TRMNL. `APP-STANDARD.md` says how an app is built; this says what its outside API looks like, so a reader written once works against every app.
 
-**Status:** draft 4, 6 Nov 2026. Draft 3 was released with the shared code (section 12) in v1.10. Draft 4 adds **inbound items** (things another app keeps in this one, first for Muddy Paws' reminders in Docket), times sent *to* an app, per-action limits, and events that say which app an item came from (section 18). Its shared-code additions aren't built yet; they're for v1.11. What it means for Binge Stats, already running draft 3, is in section 19. Decisions taken with Marc on 5 Nov 2026 are marked **(decided)**. Binge Stats built all of it first, as the pilot (decided), and is running it; draft 3 takes in what the build found (section 17). The shared code was lifted out of Binge (sections 12 and 14).
+**Status:** draft 4, 6 Nov 2026. Draft 3 was released with the shared code (section 12) in v1.10. Draft 4 adds **inbound items** (things another app keeps in this one, first for Muddy Paws' reminders in Docket), times sent *to* an app, per-action limits, and events that say which app an item came from (section 18). Its shared-code additions are in v1.11 (section 12). What it means for Binge Stats, already running draft 3, is in section 19. Decisions taken with Marc on 5 Nov 2026 are marked **(decided)**. Binge Stats built all of it first, as the pilot (decided), and is running it; draft 3 takes in what the build found (section 17). The shared code was lifted out of Binge (sections 12 and 14).
 
 ## 1. What it's for
 
@@ -269,21 +269,19 @@ Lifted from Binge Stats' pilot (decided) and released in v1.10. An app takes the
 
 Pillow is the one new dependency (images only).
 
-**To add in v1.11, for draft 4** (none of it changes what an app already passes in):
-- `check_token(token)` may also return `app` (a short name, or `None`). Missing means `None`, so an app that returns `{id, name, scope}` is unchanged.
-- `@standard("app")`: an app token only, for `/api/v1/inbound/` routes; `identity()` includes `app`.
-- `core.add_inbound(kind, fields)` for `meta.inbound`, and helpers for the PUT rules (a field changed, "a later due date reopens").
-- `add_action(..., limit="10/hour")`, enforced by `@standard`.
-- `local_time(s, tz)` and `local_out(dt, tz)` for wall-clock fields (section 5).
-- `webhook_matches(webhook, event)` for the event-type and source filters.
-- `api_tokens_card.html`: a **Belongs to an app** field, shown only when the app sets `api_tokens_apps = True`. `webhooks_card.html`: **Only items from**, shown only when the app passes `webhook_sources`.
-- `check_api.py ... [app_token]`: with an app token, a PUT, PUT again (no duplicate), GET, done and DELETE on a throwaway key, and a `403` for a plain write token on `/api/v1/inbound/`.
+**Added in v1.11, for draft 4.** None of it changes what an app already passes in, and `tools/check_du_api.py` checks it all, including that an app passing nothing new is unchanged:
+- `check_token(token)` may also return `app` (a short name, or `None`). Missing means `None`, so an app that returns `{id, name, scope}` is unchanged. `identity().app` says which app is asking.
+- `@standard("app")`: an app token only (a write token with an `app`), for `/api/v1/inbound/` routes. Anything else gets `403` with the sentence from section 3.
+- `core.add_inbound(kind, fields)` puts `inbound` in `meta`. `valid_key(key)` checks a key, and `reopens(status, old_due, new_due)` applies the "a later due date reopens it" rule.
+- `add_action(..., limit="10/hour")` shows the limit in `meta`. The action's route calls `core.over_limit(name)`, which returns the `429` (with `Retry-After` and the time it can go) or `None`.
+- `local_time(s, field_name)` reads a wall-clock time sent in, giving `("2026-12-24", "09:00" | None)` or a `ValueError` with the sentence. `local_out(day, at, tz)` gives `{"due", "due_at"}` for an answer.
+- `webhook_matches(event_types, source_app, event)` applies a webhook's event-type and "Only items from" filters.
 
 **Templates:**
 - `templates/display/base.html`: the display page shell (section 9).
-- `templates/partials/api_tokens_card.html`: tokens (made, listed, revoked), previews of the app's display pages, and the latest API actions. `templates/partials/webhooks_card.html`: webhooks with their last success or error, the signing secret shown once, and the event-type filter. Both go in Settings after the app's own settings, before the Design system card; each documents the variables it needs at its top. Revoke, New secret and Delete use `js/confirm.js` (DESIGN-SPEC 7.10) when the page loads it.
+- `templates/partials/api_tokens_card.html`: tokens (made, listed, revoked), previews of the app's display pages, and the latest API actions. Set `api_tokens_apps = True` to add a **Belongs to an app** field, and pass `webhook_sources` to the webhooks card to add **Only items from** (draft 4). `templates/partials/webhooks_card.html`: webhooks with their last success or error, the signing secret shown once, and the event-type filter. Both go in Settings after the app's own settings, before the Design system card; each documents the variables it needs at its top. Revoke, New secret and Delete use `js/confirm.js` (DESIGN-SPEC 7.10) when the page loads it.
 
-**`tools/check_api.py <base_url> <read_token> [write_token]`** checks a running app against this standard: `meta` and `status` shapes, every feed's item shape, ETag and `304`, a read token in the URL, a bad token, a write token in the URL refused, images in WebP and JPEG, the events stream, and each display page with and without a token. Read-only and standard library only, so it runs on the app's host. Run it after each app's change, like `check_du_sync.py`.
+**`tools/check_api.py <base_url> <read_token> [write_token] [app_token]`** checks a running app against this standard: `meta` and `status` shapes, every feed's item shape, ETag and `304`, a read token in the URL, a bad token, a write token in the URL refused, images in WebP and JPEG, the events stream, and each display page with and without a token. Standard library only, so it runs on the app's host. Read-only, unless it's given an app token: then it also runs one inbound item through PUT, PUT again, GET, done, a reopening PUT and DELETE, on a throwaway `check-api-…` key, which it leaves archived. Run it after each app's change, like `check_du_sync.py`.
 
 **In an app's updater config** (DESIGN-SPEC 18.1), the lines for these, with the app's own paths:
 
