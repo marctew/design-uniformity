@@ -41,7 +41,7 @@ The accent colour says which category an app belongs to (section 3.3). The app i
 | `templates/macros/ui.html` | Jinja components: page_header, stat_tile, empty_state, tabs, badge, progress, banner, kebab, confirm_button, field | Jinja apps |
 | `templates/base.html` + `partials/` | The app shell: sidebar, top bar, bottom nav, toasts, theme head and theme switch | Starting a new app |
 | `js/icons.js`, `js/toast.js`, `js/chart-palette.js` | Glyph strings, toasts, and chart colours for vanilla JS | Apps without Jinja, Alpine or htmx |
-| `brand/` | Each app's icon (Binge Stats, The Back Room, Encore, PodBridge, claude-ops), the app-icon template and a teal example | Making an app icon |
+| `brand/` | Each app's icon (Binge Stats, The Back Room, Encore, PodBridge, claude-ops, Muddy Paws, Docket), the app-icon template and a teal example (Vital Signs uses it) | Making an app icon |
 | `tools/du_sync.py` | The updater: runs on each app's host and keeps its copy of these files on the current release (section 18) | Installing an app's updates |
 | `tools/du_flask.py` + `templates/partials/design_card.html` + `js/design-card.js` | The Settings card for the updater (7.14) | Every Flask app |
 | `tools/release.py` | Makes a release and promotes it to `stable` | Publishing a change |
@@ -653,3 +653,4 @@ health = "http://127.0.0.1:8765/healthz" # anything below 500 counts as up
 | 2026-11-06 | The scroll fade (7.17), from Binge Stats: `scroll-fade` in both CSS files and `js/scroll-fade.js`, so a sideways row fades at the edge where there's more to scroll instead of cutting a card off. | Binge Stats (source) |
 | 2026-11-06 | `API-STANDARD.md`: Encore has the API (14), with what it found (20). Through the tunnel, Cloudflare's Browser Integrity Check blocks API readers until the app's hostname has a Configuration Rule turning it off for `/api/v1/` and `/display/` (4); Encore and Binge Stats have one. `tools/check_api.py` looks headers up case-insensitively, since Cloudflare sends them in lower case. | Encore (source) |
 | 2026-11-06 | Added `PWA-ICONS.md`: home screen icons, `manifest.json` and full-screen tags. The top bar in `uniform.css` pads for `safe-area-inset-top`. | – |
+| 2026-11-06 | Muddy Paws and Docket icons added to `brand/`. Vital Signs now uses the teal example icon. | Muddy Paws, Docket, Vital Signs |
