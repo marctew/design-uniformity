@@ -65,7 +65,8 @@ templates/macros/ui.html       Jinja components
 templates/partials/            theme head, theme switch, toast, design card, sidebar footer, About page,
                                API tokens and Webhooks cards for Settings
 templates/display/base.html    the display page shell (API-STANDARD 9)
-js/icons.js, toast.js, chart-palette.js, design-card.js, confirm.js (inline confirm for plain forms)
+js/icons.js, toast.js, chart-palette.js, design-card.js, confirm.js (inline confirm for plain forms),
+                               scroll-fade.js (fades a sideways row's edge, 7.17)
 brand/                         each app's icon, the app-icon template, teal example
 tools/                         du_sync.py (updater), du_flask.py (Settings card API), du_api.py (the outside API),
                                check_api.py (checks an app against API-STANDARD), check_du_api.py (checks du_api.py
