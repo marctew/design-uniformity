@@ -1,0 +1,51 @@
+# Make a Design Uniformity release from GitHub, without a local checkout: tools/release.py run with
+# the workflow's own token. Actions → Release → Run workflow, with the version (e.g. 1.10).
+#   promote: also point `stable` at it, so apps take it in their nightly check (DESIGN-SPEC 18.1).
+# Running it again with promote ticked, for a version already released, only promotes.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version, e.g. 1.10"
+        required: true
+      promote:
+        description: "Also point stable at it (apps update tonight)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency: release
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Who commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Release
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "v$VERSION already exists; not releasing it again."
+          else
+            python tools/release.py "$VERSION"
+          fi
+      - name: Promote
+        if: ${{ inputs.promote }}
+        env:
+          VERSION: ${{ inputs.version }}
+        run: python tools/release.py promote "$VERSION"
