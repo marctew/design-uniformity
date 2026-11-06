@@ -1,0 +1,10 @@
+<!-- Muddy Paws: Design Uniformity app icon (Home: teal to cyan). A paw print: four toes and the pad. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14b8a6"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs>
+  <rect width="64" height="64" rx="16" fill="url(#g)"/>
+  <ellipse cx="18.5" cy="29" rx="4.6" ry="5.8" transform="rotate(-24 18.5 29)" fill="#fff" opacity=".7"/>
+  <ellipse cx="26.5" cy="19.5" rx="4.8" ry="6.2" transform="rotate(-8 26.5 19.5)" fill="#fff" opacity=".85"/>
+  <ellipse cx="37.5" cy="19.5" rx="4.8" ry="6.2" transform="rotate(8 37.5 19.5)" fill="#fff" opacity=".85"/>
+  <ellipse cx="45.5" cy="29" rx="4.6" ry="5.8" transform="rotate(24 45.5 29)" fill="#fff" opacity=".7"/>
+  <path d="M32 31c-5.4 0-11.5 7.3-12.6 12.4-.9 4.1 1.8 6.8 5.4 6.6 2.6-.1 4.6-1.6 7.2-1.6s4.6 1.5 7.2 1.6c3.6.2 6.3-2.5 5.4-6.6C43.5 38.3 37.4 31 32 31Z" fill="#fff"/>
+</svg>
