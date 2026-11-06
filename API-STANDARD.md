@@ -2,7 +2,7 @@
 
 How Marc's apps let other things read and drive them: Docket's briefs, Vital Signs screens, the ESP32 panels, the widget display, Home Assistant, n8n and TRMNL. `APP-STANDARD.md` says how an app is built; this says what its outside API looks like, so a reader written once works against every app.
 
-**Status:** draft 2, 5 Nov 2026. Not released to the apps yet. Decisions taken with Marc on 5 Nov 2026 are marked **(decided)**. Draft 2 takes in the feedback from Binge Stats' pilot plan (section 16). **Binge Stats builds this first, as the pilot (decided)**, and the shared code is lifted out of it (sections 12 and 14).
+**Status:** draft 3, 6 Nov 2026, released with the shared code (section 12) in v1.10. Decisions taken with Marc on 5 Nov 2026 are marked **(decided)**. Binge Stats built all of it first, as the pilot (decided), and is running it; draft 3 takes in what the build found (section 17). The shared code was lifted out of Binge (sections 12 and 14).
 
 ## 1. What it's for
 
@@ -44,7 +44,7 @@ Readers send `Accept: application/json` (except for images, events and display p
 - **Read tokens may also go in the URL** as `?token=…` **(decided)**, because TRMNL's cloud polling and simple firmware can't always set a header. Write tokens are refused in the URL with `400 {"error": "Write tokens go in the Authorization header, never the URL."}`. URLs end up in logs, so a URL token should be a display's own read token, easy to revoke.
 - **Tokens never reach a log.** gunicorn's default access log has the query string (`%(r)s`, `%(q)s`) and the referrer (`%(f)s`), so every app sets `--access-logformat '%(h)s %(t)s "%(m)s %(U)s %(H)s" %(s)s %(b)s "%(a)s"'` (`APP-STANDARD.md` 3): the path without the query string, and no referrer. The app's own logging never prints `request.url` or `request.full_path` for these paths, and `/display/` pages send `Referrer-Policy: no-referrer`.
 - **A signed-in admin** (the app's own session cookie) can read every `/api/v1/` GET too, so the app's own pages and its `/display/` previews work without a token. In an app with viewer or other non-admin logins (Binge Stats), only an admin session counts; any other session is treated as no session. Writes from a session still need CSRF.
-- **Bad tokens:** `401 {"error": "That token isn't valid. Make a new one in Settings → API tokens."}`. Ten bad tokens from one address in a minute lock that address out for 15 minutes with `429` and `Retry-After`, the same rule as Docket's MCP. A good token with the wrong scope gets `403`.
+- **Bad tokens:** `401 {"error": "That token isn't valid. Make a new one in Settings → API tokens."}`. Ten bad tokens from one address in a minute lock that address out for 15 minutes with `429` and `Retry-After`, the same rule as Docket's MCP. The address is `CF-Connecting-IP` when it's there, else the client IP: an app with no trusted proxies sees every tunnel request coming from cloudflared, so keyed by that, one stranger's bad tokens would lock out every tunnel reader. Cloudflare overwrites the header, so it can't be faked from outside, and faking it on the LAN only dodges the lockout. A good token with the wrong scope gets `403`.
 - **Secrets an app holds for others** (Plex tokens, indexer keys, a mail password) never appear in any `/api/v1/` answer, image URL or display page.
 
 ## 4. Exposure
@@ -152,7 +152,8 @@ This shape is for the standard's routes. An app's older `/api/v1/` routes keep t
 - Answer: `{"ok": true, "message": "Queued Rumours (1977).", "result": {...}}`. `message` is short enough for a toast or a panel's status line.
 - Only actions listed in `meta` exist. They're named for what they do (`add_task`, `queue_album`, `mark_watched`, `skip_track`), not generic `update` endpoints, and each is documented with its body.
 - Anything destructive in the app's own UI (delete, restore) isn't offered as an action unless Marc asks for that one specifically.
-- Every action is logged in the app's activity log with the token's name, so "who did that" always has an answer.
+- Every action that runs, refused or not, is logged in the app's action log with the token's name, so "who did that" always has an answer. A repeat answered from an `Idempotency-Key` isn't logged again, since nothing ran. An upstream failure (`502`) isn't remembered against its key, so it can be retried with the same one.
+- An admin signed in to the app can call actions from its own pages with the session cookie and `X-CSRF-Token`; the log names them as "Admin session".
 
 ## 8. Live updates (decided: push from the start)
 
@@ -195,7 +196,10 @@ Unchanged: apps that need to tell Marc something use the self-hosted ntfy server
 
 - `GET /display/<name>` returns a full HTML page in the app's look (DESIGN-SPEC tokens, its accent), sized to fill the viewport, with no sidebar, no login prompt and no scroll bars.
 - Parameters: `token` (read), `theme=dark|light` (default dark), `size=800x480` (a hint for layout breakpoints; the page still fills whatever it's given), `scale=1.5` for far-away screens, `static=1` to render once with no JavaScript (e-ink and screenshot services), and `accent=` to override the app's accent so a wall of screens can match.
-- Unless `static=1`, the page updates itself from `/api/v1/events` with a fallback poll at the status's `refresh_s`. If the app is down it keeps the last content and shows a small "Last updated 14:02" in faint text, instead of an error page.
+- Unless `static=1`, the page reloads **its own body** (the same route with `fragment=1`) every `refresh_s`, and straight away when a relevant event comes in on `/api/v1/events`. One server-side template renders both the page and its updates, so there's no second renderer in JavaScript to keep in step. If the app is down it keeps the last content and shows a small "Last updated 14:02" in faint text, instead of an error page.
+- Errors (no token, a bad one, a write token in the URL) are a **plain HTML page** with the reason, not JSON: whatever shows a display page is a screen with nobody to read JSON. A signed-in admin can open the page without a token, to preview it.
+- A display page sends `Referrer-Policy: no-referrer`, `Cache-Control: no-store` and `X-Robots-Tag: noindex`, since its token is in its own URLs.
+- The shell is `templates/display/base.html` (section 12): plain CSS and design tokens, so it works with `uniform.css` and with the Tailwind entry. The app's template extends it and fills `body`.
 - The same data as the JSON, so anything a display page shows is also reachable as JSON for screens that render their own (TRMNL's Liquid, the ESP32s).
 - Vital Signs can show any display page as a normal web page, and can list them from `meta` to offer them as content.
 
@@ -216,16 +220,37 @@ Unchanged: apps that need to tell Marc something use the self-hosted ntfy server
 
 ## 12. Shared code
 
-So each app doesn't write this from scratch, this repo gets the shared code. **It's lifted out of Binge Stats' pilot (decided)**: Binge builds the generic part as `bingestats/web/api_core.py`, which imports nothing from Binge and talks to it only through `init_api(...)` and the callables passed in. Once that's proven against real readers, it moves here as `du_api.py` with as little change as possible, and Binge switches to the shared copy through the design updater.
+Lifted from Binge Stats' pilot (decided) and released in v1.10. An app takes these through the design updater, like `du_flask.py`, and never edits them in place.
 
-- **`tools/du_api.py`**, a Flask adapter like `du_flask.py`, carried by the design updater:
-  - `init_api(app, data_dir, name=..., version=...)` registers `/api/v1/meta`, token checking, the URL-token rule, the lockout, ETags, error answers and query-string-free logging;
-  - decorators `@feed("arrivals", title=..., refresh_s=...)`, `@action("queue_album", body=...)`, `@display("now-playing", sizes=[...])` that also fill `meta`;
-  - `publish(conn, event_type, title, item)` (writes the events row), a stream generator given a "rows after id" function, and webhook signing and the retry schedule;
-  - `image_route(kind, fetch)` with resizing (Pillow) and the disk cache.
-- **`templates/partials/api_tokens_card.html`** and **`webhooks_card.html`** for Settings, after the app's own settings and before the Design system card.
-- **`templates/display/base.html`**: the display page shell (tokens, theme, the "last updated" note, the events client). It's also written first in Binge, with no Binge-specific markup, and lifted unchanged.
-- **`tools/check_api.py <base_url> <token>`**: checks an app against this standard (meta, status shape, a feed's item shape, ETag and 304, a bad token, a URL write token refused) and prints what's wrong. Run it after each app's change, like `check_du_sync.py`.
+**`tools/du_api.py`**, a Flask module that imports nothing from any app:
+
+- `init_api(app, *, name, title, version, sha, accent, icon, time_zone, check_token, is_admin_session, csrf_ok, legacy_error=None, max_streams=8)` installs the gate on every request under `/api/v1/` and `/display/`: who's asking (Bearer, `?token=` for read tokens, or the admin session), the URL-token rule, the lockout and rate limit, `API_PUBLIC`, and weak ETags with `304`. It returns the core (also `app.extensions["du_api"]`). `check_token(token)` returns `{id, name, scope}` or `None`; `sha`, `time_zone`, `is_admin_session` and `csrf_ok` are callables. An app that already had `/api/v1` routes passes `legacy_error(code, message, status)` so refusals on those keep their old shape.
+- The registry behind `meta`: `core.add_feed(name, title, refresh_s, params)`, `add_action(name, title, body, when=None)` (`when` hides an action that's switched off), `add_display(name, title, sizes)` and `add_events(types)`; `core.meta()` builds the answer. `core.open_endpoints` (no token, e.g. a health check) and `core.unmetered_endpoints` (images and events) are sets of endpoint names.
+- `@standard("read" | "write")` on each of the standard's routes: scope check, CSRF for a session's writes, the standard's error shape. `identity()` says who's asking, for older routes and for the action log. `ApiCore.error(code, message, status)` builds an error; `cached(resp, refresh_s)` sets `Cache-Control`.
+- `@display` on each display page: read access, the HTML error page, and the no-referrer, no-store headers.
+- `image_response(cache_dir, kind, ident, fetch)`: `fetch(box)` returns the original bytes, fetched with the app's own credentials, at least `box` wide; the module snaps the width, resizes with Pillow, picks WebP or JPEG, honours `fmt`, `q` and `gray`, caches on disk and sends an ETag. `prune_image_cache(dir)` for the app's background job.
+- `event_stream(rows_after, last_id, stopping=core.stopping)`, `StreamSlots` (`core.streams.take()` gives a release function or `None` when full) and `stop_streams_on_sigterm(core)`, for `/api/v1/events`. `rows_after(id)` reads the app's own `events` table (section 8).
+- `sign(body, secret)`, `verify(body, secret, header)` and `RETRY_AFTER_S`, for webhooks. Each app keeps its own `webhooks` and `webhook_deliveries` tables and sends from its background worker.
+- `iso(ts)` and `parse_iso(s)` for the standard's UTC times.
+
+Pillow is the one new dependency (images only).
+
+**Templates:**
+- `templates/display/base.html`: the display page shell (section 9).
+- `templates/partials/api_tokens_card.html`: tokens (made, listed, revoked), previews of the app's display pages, and the latest API actions. `templates/partials/webhooks_card.html`: webhooks with their last success or error, the signing secret shown once, and the event-type filter. Both go in Settings after the app's own settings, before the Design system card; each documents the variables it needs at its top. Revoke, New secret and Delete use `js/confirm.js` (DESIGN-SPEC 7.10) when the page loads it.
+
+**`tools/check_api.py <base_url> <read_token> [write_token]`** checks a running app against this standard: `meta` and `status` shapes, every feed's item shape, ETag and `304`, a read token in the URL, a bad token, a write token in the URL refused, images in WebP and JPEG, the events stream, and each display page with and without a token. Read-only and standard library only, so it runs on the app's host. Run it after each app's change, like `check_du_sync.py`.
+
+**In an app's updater config** (DESIGN-SPEC 18.1), the lines for these, with the app's own paths:
+
+```toml
+"tools/du_api.py" = "<package>/du_api.py"
+"templates/display/base.html" = "<package>/templates/display/base.html"
+"templates/partials/api_tokens_card.html" = "<package>/templates/partials/api_tokens_card.html"
+"templates/partials/webhooks_card.html" = "<package>/templates/partials/webhooks_card.html"
+"tools/check_api.py" = "scripts/check_api.py"
+"API-STANDARD.md" = "docs/design/API-STANDARD.md"
+```
 
 ## 13. Readers
 
@@ -241,8 +266,8 @@ How each reader uses it, once apps have it:
 
 One app at a time, like the design system. **Binge Stats goes first, as the pilot (decided 5 Nov 2026):** the shared code comes out of it rather than going into it.
 
-1. **Binge Stats builds the standard in-app,** to its own plan (`docs/specs/api-standard.md` in its repo), in six stages: the shared core with `meta` and `status`, then feeds and images, actions, events and webhooks, the `now-playing` display page, and docs with checking. Its current endpoints stay exactly as they are (section 1).
-2. **Lift the shared code** into this repo (`du_api.py`, the API tokens and webhooks cards, the display shell, `check_api.py`), fix anything the pilot found in this document, and release it as a Design Uniformity version. Binge then moves onto the shared copy.
+1. **Done, 5–6 Nov 2026: Binge Stats built the standard in-app,** to its own plan (`docs/specs/api-standard.md` in its repo), in six stages: the shared core with `meta` and `status`, then feeds and images, actions, events and webhooks, the `now-playing` display page, and docs with checking. Its current endpoints stayed exactly as they were (section 1). What was checked against the live server, including a 5½-minute events stream through the Cloudflare tunnel, is in its `docs/verification.md`.
+2. **Done in v1.10: the shared code lifted** into this repo (`du_api.py`, the API tokens and webhooks cards, the display shell, `check_api.py`), with what the pilot found written in (section 17). Binge takes the shared copies through the design updater.
 3. **Docket:** `status` (due today, overdue, the night shift), feeds (`today`, `upcoming`, `reports`), actions (`add_task`, `complete_task`), events (`task.due`, `brief.published`, `watch.fired`, `approval.requested`). Then its reader side (section 13), which is step 8.
 4. **Encore** (downloads), **PodBridge** (new episodes, sync state), **Vital Signs** (its own status), **The Back Room** (status only, LAN only, unless Marc wants more).
 5. claude-ops is deployed only by Marc and keeps its own API; it isn't part of this unless he says so.
@@ -266,3 +291,12 @@ From Binge Stats' pilot plan (5 Nov 2026), all accepted:
 
 Also: Binge is the pilot and the shared code is lifted from it (sections 12 and 14), and webhook delivery always runs in a background job, with a retry schedule of 1, 3 and 6 minutes (section 8).
 
+## 17. Changes in draft 3
+
+From building and running the pilot in Binge Stats (6 Nov 2026):
+
+1. **The lockout is keyed by `CF-Connecting-IP`** when it's there, so one stranger can't lock out every reader coming through the tunnel. (Section 3.)
+2. **A repeat answered from an `Idempotency-Key` isn't logged again**, and a `502` isn't remembered against its key. An admin session can call actions too, with CSRF. (Section 7.)
+3. **Display pages reload their own body** (`fragment=1`) rather than re-rendering JSON in the browser, **refuse with a plain HTML page**, and send no-referrer and no-store. (Section 9.)
+4. **Section 12 now describes the shared code as built**: `init_api` with callables and an optional `legacy_error`, `@standard` and `@display` rather than per-feed decorators, `image_response`, `event_stream` with `StreamSlots`, and `sign`. Each app keeps its own events and webhook tables. The updater config lines are listed.
+5. **Docs:** the tokens and webhooks cards say what they need; `tools/check_api.py` also checks images, the events stream and display pages.

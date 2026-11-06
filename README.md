@@ -50,7 +50,7 @@ On an app's host: write `/etc/design-uniformity/<app>.toml` (example in `DESIGN-
 ```
 DESIGN-SPEC.md                 the spec
 APP-STANDARD.md                how apps are built: Flask package, gunicorn, systemd, /healthz, update.sh
-API-STANDARD.md                the outside API: /api/v1 status, feeds, images, actions, events, display pages (draft)
+API-STANDARD.md                the outside API: /api/v1 status, feeds, images, actions, events, display pages
 preview.html                   everything on one page
 css/uniform.css                plain CSS: tokens + components
 css/accents.css                accent families, one per category (blue, graphite, teal, fuchsia)
@@ -62,8 +62,11 @@ glyphs/glyphs.json             name -> SVG, grouped
 templates/base.html            app shell (sidebar, top bar, bottom nav)
 templates/macros/icons.html    Jinja icon() macro
 templates/macros/ui.html       Jinja components
-templates/partials/            theme head, theme switch, toast, design card, sidebar footer, About page
+templates/partials/            theme head, theme switch, toast, design card, sidebar footer, About page,
+                               API tokens and Webhooks cards for Settings
+templates/display/base.html    the display page shell (API-STANDARD 9)
 js/icons.js, toast.js, chart-palette.js, design-card.js, confirm.js (inline confirm for plain forms)
 brand/                         each app's icon, the app-icon template, teal example
-tools/                         du_sync.py (updater), du_flask.py (Settings card API), release.py, check_du_sync.py
+tools/                         du_sync.py (updater), du_flask.py (Settings card API), du_api.py (the outside API),
+                               check_api.py (checks an app against API-STANDARD), release.py, check_du_sync.py
 ```
