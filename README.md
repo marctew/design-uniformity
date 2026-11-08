@@ -63,10 +63,11 @@ glyphs/glyphs.json             name -> SVG, grouped
 templates/base.html            app shell (sidebar, top bar, bottom nav)
 templates/macros/icons.html    Jinja icon() macro
 templates/macros/ui.html       Jinja components
-templates/partials/            theme head, theme switch, toast, design card, sidebar footer, About page,
+templates/partials/            theme head, theme switch, toast, design card, sidebar toggle and footer, About page,
                                API tokens and Webhooks cards for Settings
 templates/display/base.html    the display page shell (API-STANDARD 9)
 js/icons.js, toast.js, chart-palette.js, design-card.js, confirm.js (inline confirm for plain forms),
+                               sidebar.js (the sidebar's Collapse button, 6.1),
                                scroll-fade.js (fades a sideways row's edge, 7.17)
 brand/                         each app's icon, the app-icon template, teal example
 tools/                         du_sync.py (updater), du_flask.py (Settings card API), du_api.py (the outside API),

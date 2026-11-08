@@ -12,6 +12,7 @@
   <title>{% block title %}{{ app_first }} {{ app_second }}{% endblock %}</title>
   <link rel="icon" href="{{ url_for('static', filename='img/icon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script src="{{ url_for('static', filename='design/sidebar.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -20,9 +21,10 @@
     <a href="/" class="brand"><img src="{{ url_for('static', filename='img/icon.svg') }}" alt=""><span>{{ app_first }} <span class="brand-gradient">{{ app_second }}</span></span></a>
     <nav class="nav">
       {% for ep, label, glyph, eps in nav %}
-      <a href="{{ url_for(ep) }}" class="nav-link {{ 'active' if request.endpoint in eps }}">{{ icon(glyph) }}{{ label }}</a>
+      <a href="{{ url_for(ep) }}" class="nav-link {{ 'active' if request.endpoint in eps }}" title="{{ label }}">{{ icon(glyph) }}{{ label }}</a>
       {% endfor %}
     </nav>
+    {% include "partials/sidebar_toggle.html" %}
     <div style="margin-top:24px;padding-top:16px;border-top:1px solid rgb(var(--border))">
       {% block sidebar_foot %}{% include "partials/theme_switch.html" %}{% endblock %}
     </div>

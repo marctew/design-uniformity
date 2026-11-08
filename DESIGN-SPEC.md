@@ -181,9 +181,26 @@ Use `templates/base.html`, which works with either CSS.
 
 | | Phone (< 1024px) | Desktop (≥ 1024px) |
 |---|---|---|
-| Navigation | Sticky top bar (icon + name, one action on the right), plus a fixed bottom nav | 256px fixed sidebar: icon + name, nav links, then the footer (sign out, theme switch, version) |
+| Navigation | Sticky top bar (icon + name, one action on the right), plus a fixed bottom nav | 256px fixed sidebar: icon + name, nav links, Collapse (6.1), then the footer (sign out, theme switch, version). Collapsed, a 72px rail of icons |
 | Bottom nav | Up to 5 items. With more, the 5th is **More**, a menu holding the rest. Respects `safe-area-inset-bottom`. | Hidden |
 | Content | 16px gutters (24px from 640px), 112px bottom padding so the nav never covers content | Max 1280px wide, centred, 32px gutters, 40px top padding |
+
+### 6.1 Collapsing the sidebar
+
+On desktop the sidebar can be collapsed to a **72px rail of icons**, giving the page the width back. Every app with a
+sidebar offers it.
+
+- **The button:** `partials/sidebar_toggle.html`, in the sidebar just above the footer: « Collapse (the glyph
+  `chevron-left`, turned round to point right when collapsed, reading Expand). Load `js/sidebar.js` (plain script,
+  `defer`) on every page with the sidebar.
+- **Collapsed:** the brand shows its icon only; each nav link shows its glyph only, with its name as the `title`
+  tooltip, so **every nav link carries `title="<name>"`**; the footer's Sign out is its glyph; the theme switch stacks
+  its three buttons; the version line hides (it's on About).
+- **Remembered** per browser (localStorage `sidebar`), and applied before the first paint by
+  `partials/theme_head.html`, so a page never draws wide and then snaps narrow.
+- **Phones** (under 1024px) have no sidebar, so nothing changes there.
+- `js/sidebar.js` fires a window `resize` when it toggles, so charts and self-sizing grids redraw for the new width.
+- Tailwind apps (Binge Stats) build their own shell, so they take the same rules into it rather than these classes.
 
 - **Breakpoints:** `sm` 640px (tighter to roomier spacing) and `lg` 1024px (sidebar layout) are the layout breakpoints. `md` (768px) and `xl` (1280px) are allowed only to add grid columns or show an extra table column as space allows. Don't use them to change the shell or a component's look.
 - **Page header** (`page_header`): the title and an optional one-line subtitle on the left, with actions on the right. Actions wrap under the title on phones.
@@ -654,3 +671,4 @@ health = "http://127.0.0.1:8765/healthz" # anything below 500 counts as up
 | 2026-11-06 | `API-STANDARD.md`: Encore has the API (14), with what it found (20). Through the tunnel, Cloudflare's Browser Integrity Check blocks API readers until the app's hostname has a Configuration Rule turning it off for `/api/v1/` and `/display/` (4); Encore and Binge Stats have one. `tools/check_api.py` looks headers up case-insensitively, since Cloudflare sends them in lower case. | Encore (source) |
 | 2026-11-06 | Added `PWA-ICONS.md`: home screen icons, `manifest.json` and full-screen tags. The top bar in `uniform.css` pads for `safe-area-inset-top`. | – |
 | 2026-11-06 | Muddy Paws and Docket icons added to `brand/`. Vital Signs now uses the teal example icon. | Muddy Paws, Docket, Vital Signs |
+| 2026-11-08 | The sidebar collapses to a rail of icons (6.1): `partials/sidebar_toggle.html`, `js/sidebar.js`, and `theme_head.html` restores it before first paint. Nav links carry a `title`. Opt-in: an app gets it by adding the partial and the script. | HomeForm (first); the other plain-CSS apps when they add it; Binge Stats in its own shell |
