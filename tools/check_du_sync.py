@@ -193,6 +193,26 @@ health = "http://127.0.0.1:{srv.server_port}/"
         check("status shows v1.1", s["version"] == "v1.1" and s["tone"] == "success" and s["can_rollback"], s)
         check("dates in spec format", s["date"] == "4 Nov 2026", s["date"])
         check("form POST refused", c.post("/api/design/check", data={"x": 1}).status_code == 415)
+
+        sd = Path(tempfile.mkdtemp())
+        (sd / "design").mkdir()
+        (sd / "design/uniform.css").write_text("/* x */")
+        os.utime(sd / "design/uniform.css", (1700000000, 1700000000))
+        sa = flask.Flask("s", static_folder=str(sd), static_url_path="/static")
+        du_flask.init_design(sa, state_dir)
+        du_flask.version_static_links(sa)                                   # twice: still one hook
+        with sa.test_request_context():
+            u = flask.url_for("static", filename="design/uniform.css")
+            check("static link versioned", u == "/static/design/uniform.css?v=1700000000", u)
+            u = flask.url_for("static", filename="design/uniform.css", v="2")
+            check("an explicit v= kept", u == "/static/design/uniform.css?v=2", u)
+            u = flask.url_for("static", filename="missing.css")
+            check("missing file: plain link", u == "/static/missing.css", u)
+        sa = flask.Flask("o", static_folder=str(sd), static_url_path="/static")
+        du_flask.init_design(sa, state_dir, version_static=False)
+        with sa.test_request_context():
+            u = flask.url_for("static", filename="design/uniform.css")
+            check("version_static=False: plain link", u == "/static/design/uniform.css", u)
         r = c.post("/api/design/auto", json={"enabled": False}).get_json()
         check("auto off saved", r["auto"] is False and json.loads((state_dir / "prefs.json").read_text())["auto"] is False)
         r = c.post("/api/design/rollback", json={}).get_json()
