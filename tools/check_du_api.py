@@ -134,5 +134,27 @@ check("source filter keeps its own", du_api.webhook_matches(["task.done"], "mudd
 check("source filter drops another app's", not du_api.webhook_matches([], "other", ev))
 check("source filter drops events with no source", not du_api.webhook_matches([], "muddy-paws", {"type": "task.done"}))
 
+# caching (v1.20): nothing the API answers may be kept by a shared cache
+check("an error is no-store", "no-store" in (c.put("/api/v1/inbound/items/x").headers.get("Cache-Control") or ""))
+try:
+    import io
+    import tempfile
+
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.new("RGB", (400, 300), "teal").save(buf, "JPEG")
+    img_app = Flask(__name__)
+    cache_dir = tempfile.mkdtemp()
+
+    @img_app.get("/api/v1/images/<kind>/<ident>")
+    def image(kind, ident):
+        return du_api.image_response(cache_dir, kind, ident, lambda box: buf.getvalue())
+
+    r = img_app.test_client().get("/api/v1/images/poster/1?w=160", headers={"Accept": "image/webp"})
+    cc = r.headers.get("Cache-Control", "")
+    check("an image is private, never public", r.status_code == 200 and "private" in cc and "public" not in cc, cc)
+except ImportError:
+    print("--   image caching: no Pillow here, skipped")
+
 print(f"\n{'All passed' if not failed else f'{failed} failed'}.")
 sys.exit(1 if failed else 0)
