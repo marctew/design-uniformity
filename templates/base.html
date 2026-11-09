@@ -21,7 +21,7 @@
     <a href="/" class="brand"><img src="{{ url_for('static', filename='img/icon.svg') }}" alt=""><span>{{ app_first }} <span class="brand-gradient">{{ app_second }}</span></span></a>
     <nav class="nav">
       {% for ep, label, glyph, eps in nav %}
-      <a href="{{ url_for(ep) }}" class="nav-link {{ 'active' if request.endpoint in eps }}" title="{{ label }}">{{ icon(glyph) }}{{ label }}</a>
+      <a href="{{ url_for(ep) }}" class="nav-link {{ 'active' if request.endpoint in eps }}" title="{{ label }}">{{ icon(glyph, 'icon h-5 w-5') }}{{ label }}</a>
       {% endfor %}
     </nav>
     {% include "partials/sidebar_toggle.html" %}
@@ -40,22 +40,36 @@
     {% block content %}{% endblock %}
   </main>
 
-  {#- Phones: up to five entries; with more, the fifth is a More menu. -#}
+  {#- Phones: up to five entries; with more, the fifth is More, a menu of the rest (DESIGN-SPEC 6). -#}
+  {% set fits = nav | length <= 5 %}
   <nav class="bottom-nav">
-    {% for ep, label, glyph, eps in (nav if nav | length <= 5 else nav[:4]) %}
-    <a href="{{ url_for(ep) }}" class="{{ 'active' if request.endpoint in eps }}">{{ icon(glyph) }}{{ label }}</a>
+    {% for ep, label, glyph, eps in (nav if fits else nav[:4]) %}
+    <a href="{{ url_for(ep) }}" class="{{ 'active' if request.endpoint in eps }}">{{ icon(glyph, 'icon h-5 w-5') }}{{ label }}</a>
     {% endfor %}
-    {% if nav | length > 5 %}
-    <div class="menu-wrap" x-data="{ more: false }" style="display:flex;justify-content:center">
-      <button type="button" @click="more = !more">{{ icon('stack') }}More</button>
-      <div class="menu" x-cloak x-show="more" @click.outside="more = false" style="top:auto;bottom:100%;margin-bottom:8px">
-        {% for ep, label, glyph, eps in nav[4:] %}<a class="menu-item" href="{{ url_for(ep) }}">{{ icon(glyph, 'icon-sm') }}{{ label }}</a>{% endfor %}
+    {% if not fits %}{% set rest = nav[4:] %}
+    <details class="menu-wrap nav-more">
+      <summary class="{% for ep, label, glyph, eps in rest if request.endpoint in eps %}active{% endfor %}">{{ icon('more', 'icon h-5 w-5') }}More</summary>
+      <div class="menu">
+        {% for ep, label, glyph, eps in rest %}
+        <a href="{{ url_for(ep) }}" class="menu-item {{ 'active' if request.endpoint in eps }}">{{ icon(glyph, 'icon-sm') }}{{ label }}</a>
+        {% endfor %}
       </div>
-    </div>
+    </details>
     {% endif %}
   </nav>
 </div>
 <div id="toasts" class="toasts"></div>
+{% if not fits %}
+<script>
+  // More closes on a tap outside it, or Escape.
+  (() => {
+    const more = document.querySelector(".nav-more");
+    if (!more) return;
+    document.addEventListener("click", (e) => { if (more.open && !more.contains(e.target)) more.open = false; });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") more.open = false; });
+  })();
+</script>
+{% endif %}
 {% block scripts %}{% endblock %}
 </body>
 </html>
